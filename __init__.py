@@ -1,1 +1,1 @@
-from .network_module import Network, AbstractNode
+from .network_module import Network, AbstractNode, WeightedNetwork
