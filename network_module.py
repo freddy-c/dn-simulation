@@ -1,6 +1,9 @@
-from typing import Any, List, Dict
+from typing import Union, Any, List, Dict
 from abc import ABC, abstractmethod
 import networkx as nx
+
+
+NeighbourType = Union[List[int], Dict[int, float]]
 
 
 class Message:
@@ -21,7 +24,7 @@ class Message:
 class AbstractNode(ABC):
     def __init__(self, node_id: int, neighbours: List[int]):
         self.node_id: int = node_id
-        self._neighbours: List[int] = neighbours
+        self._neighbours: NeighbourType = neighbours
         self.state: Dict[str, Any] = {}
         self.inbox: List[Message] = []
         self.outbox: List[Message] = []
@@ -107,3 +110,16 @@ class Network:
             output.append(f"  State: {node.state}\n")
 
         return "".join(output)
+
+
+class WeightedNetwork(Network):
+    def _init_network(self) -> None:
+        for node in self.graph.nodes():
+            # Store neighbors with weights
+            neighbours_with_weights = {
+                neighbour: self.graph[node][neighbour].get("weight", 1.0)
+                for neighbour in self.graph.neighbors(node)
+            }
+            self.nodes[node] = self.node_type(
+                node_id=node, neighbours=neighbours_with_weights
+            )
