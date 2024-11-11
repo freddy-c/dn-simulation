@@ -29,6 +29,7 @@ class AbstractNode(ABC):
         self.state: Dict[str, Any] = {}
         self.inbox: List[Message] = []
         self.outbox: List[Message] = []
+        self.termination_round: int = None
 
     def send_message(self, recipient: int, content: Any) -> None:
         message = Message(recipient=recipient, content=content)
@@ -103,6 +104,9 @@ class Network:
     def run(self, rounds: int) -> None:
         for i in range(rounds):
             self._simulate_round(round_number=i)
+
+    def max_rounds(self) -> int:
+        return max(node.termination_round for _, node in self.nodes.items())
 
     def __str__(self) -> str:
         output = ["Network State:\n"]
@@ -200,7 +204,7 @@ def visualize_graph(
                 state_value = node.state.get(state_key, None)
                 plt.text(
                     x,
-                    y - 0.1 - (i * 0.1),
+                    y - 0.05 - (i * 0.1),
                     f"{state_key.capitalize()}: {state_value}",
                     ha="center",
                     fontsize=8,
