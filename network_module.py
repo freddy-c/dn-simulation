@@ -1,6 +1,7 @@
 from typing import Union, Any, List, Dict
 from abc import ABC, abstractmethod
 import networkx as nx
+import matplotlib.pyplot as plt
 
 
 NeighbourType = Union[List[int], Dict[int, float]]
@@ -44,7 +45,7 @@ class AbstractNode(ABC):
         pass
 
     @abstractmethod
-    def compute(self):
+    def compute(self, round_number: int):
         """Abstract method to handle computations, to be implemented in subclasses."""
         pass
 
@@ -90,18 +91,18 @@ class Network:
         for node in self.nodes.values():
             node.recieve_message()
 
-    def _compute(self) -> None:
+    def _compute(self, round_number: int) -> None:
         for node in self.nodes.values():
-            node.compute()
+            node.compute(round_number)
 
-    def _simulate_round(self) -> None:
+    def _simulate_round(self, round_number: int) -> None:
         self._send()
         self._recieve()
-        self._compute()
+        self._compute(round_number)
 
-    def run(self, steps: int) -> None:
-        for _ in range(steps):
-            self._simulate_round()
+    def run(self, rounds: int) -> None:
+        for i in range(rounds):
+            self._simulate_round(round_number=i)
 
     def __str__(self) -> str:
         output = ["Network State:\n"]
@@ -123,3 +124,87 @@ class WeightedNetwork(Network):
             self.nodes[node] = self.node_type(
                 node_id=node, neighbours=neighbours_with_weights
             )
+
+
+def visualize_graph(
+    graph,
+    nodes,
+    title="Graph Visualization",
+    node_states_to_display=None,
+    show_bfs_tree=True,
+):
+    """
+    Visualize a graph with optional BFS tree edges and customizable node states.
+
+    Args:
+        graph (nx.Graph): The graph to visualize.
+        nodes (dict): A dictionary of nodes and their states.
+        title (str): The title of the plot.
+        node_states_to_display (list of str): List of node state keys to display (e.g., ["parent", "value"]).
+        show_bfs_tree (bool): Whether to highlight BFS tree edges.
+    """
+    plt.figure(figsize=(10, 8))
+    pos = nx.spring_layout(graph)  # Positioning for all nodes
+
+    # Calculate BFS tree edges based on each node's "parent" state
+    bfs_tree_edges = []
+    if show_bfs_tree:
+        for node_id, node in nodes.items():
+            parent = node.state.get("parent", None)
+            if (
+                parent is not None and parent != -1
+            ):  # Only add valid parent-child relationships
+                bfs_tree_edges.append((parent, node_id))
+
+    # Set edge colors based on whether they're part of the BFS tree
+    edge_colors = []
+    for edge in graph.edges():
+        if show_bfs_tree and (
+            edge in bfs_tree_edges or (edge[1], edge[0]) in bfs_tree_edges
+        ):
+            edge_colors.append("orange")  # Highlight BFS tree edges
+        else:
+            edge_colors.append("gray")
+
+    # Draw nodes with labels
+    node_colors = "lightblue"
+    nx.draw(
+        graph,
+        pos,
+        with_labels=True,
+        node_color=node_colors,
+        edge_color=edge_colors,
+        node_size=500,
+        font_size=12,
+        width=2,
+    )
+
+    # Add edge weights as labels if present
+    edge_labels = {}
+    for u, v in graph.edges():
+        weight = graph[u][v].get("weight", None)  # Retrieve weight if present
+        if weight is not None:
+            edge_labels[(u, v)] = f"{weight}"  # Display weight for weighted graphs
+
+    nx.draw_networkx_edge_labels(
+        graph, pos, edge_labels=edge_labels, font_color="black"
+    )
+
+    # Display each node's specified state values
+    for node_id, (x, y) in pos.items():
+        node = nodes[node_id]
+
+        # Display specified states (e.g., "parent", "children", "value") for each node
+        if node_states_to_display:
+            for i, state_key in enumerate(node_states_to_display):
+                state_value = node.state.get(state_key, None)
+                plt.text(
+                    x,
+                    y - 0.1 - (i * 0.1),
+                    f"{state_key.capitalize()}: {state_value}",
+                    ha="center",
+                    fontsize=8,
+                )
+
+    plt.title(title)
+    plt.show()
