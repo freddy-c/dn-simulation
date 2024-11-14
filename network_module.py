@@ -27,23 +27,13 @@ class AbstractNode(ABC):
         self.node_id: int = node_id
         self._neighbours: NeighbourType = neighbours
         self.state: Dict[str, Any] = {}
-        self.inbox: List[Message] = []
+        self.message_queue: List[Message] = []
         self.outbox: List[Message] = []
         self.termination_round: int = None
 
     def send_message(self, recipient: int, content: Any) -> None:
         message = Message(recipient=recipient, content=content)
         self.outbox.append(message)
-
-    def recieve_message(self) -> None:
-        while self.inbox:
-            message = self.inbox.pop(0)
-            self.handle_message(message)
-
-    @abstractmethod
-    def handle_message(self, message: Message) -> None:
-        """Abstract method to handle received messages, to be implemented in subclasses."""
-        pass
 
     @abstractmethod
     def compute(self, round_number: int):
@@ -73,24 +63,17 @@ class Network:
             self.nodes[node] = self.node_type(node_id=node, neighbours=neighbours)
 
     def _send(self) -> None:
-        """Sends messages from each node's outbox to the recipient's inbox
-        if there exists an edge in the graph between them."""
+        """Sends messages from each node's outbox to the recipient's message queue."""
         for node in self.nodes.values():
             for message in node.outbox:
                 recipient_node = self.nodes.get(message.recipient)
 
-                # Check if an edge exists in the graph
                 if recipient_node and self.graph.has_edge(
                     node.node_id, message.recipient
                 ):
-                    recipient_node.inbox.append(message)
+                    recipient_node.message_queue.append(message)
 
-            # Clear the nodes outbox after sending messages
             node.outbox.clear()
-
-    def _recieve(self) -> None:
-        for node in self.nodes.values():
-            node.recieve_message()
 
     def _compute(self, round_number: int) -> None:
         for node in self.nodes.values():
@@ -98,14 +81,26 @@ class Network:
 
     def _simulate_round(self, round_number: int) -> None:
         self._send()
-        self._recieve()
         self._compute(round_number)
 
     def run(self, rounds: int) -> None:
+        """
+        Simulates the network operation for a given number of rounds.
+        Args:
+            rounds (int): The number of rounds to simulate.
+        Returns:
+            None
+        """
         for i in range(rounds):
             self._simulate_round(round_number=i)
 
     def max_rounds(self) -> int:
+        """
+        Calculate the maximum number of rounds among all nodes in the network.
+
+        Returns:
+            int: The maximum number of rounds.
+        """
         return max(node.termination_round for _, node in self.nodes.items())
 
     def __str__(self) -> str:
@@ -118,6 +113,11 @@ class Network:
 
 
 class WeightedNetwork(Network):
+    """
+    A class representing a weighted network that extends the base Network class.
+    Methods
+    """
+
     def _init_network(self) -> None:
         for node in self.graph.nodes():
             # Store neighbors with weights
