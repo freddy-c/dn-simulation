@@ -103,13 +103,21 @@ class Network:
         """
         return max(node.termination_round for _, node in self.nodes.items())
 
+    # def __str__(self) -> str:
+    #     output = ["Network State:\n"]
+    #     for node_id, node in self.nodes.items():
+    #         output.append(f"Node {node_id}:\n")
+    #         output.append(f"  State: {node.state}\n")
+
+    #     return "".join(output)
     def __str__(self) -> str:
         output = ["Network State:\n"]
         for node_id, node in self.nodes.items():
             output.append(f"Node {node_id}:\n")
-            output.append(f"  State: {node.state}\n")
-
+            for attr, value in vars(node).items():
+                output.append(f"  {attr}: {value}\n")
         return "".join(output)
+
 
 
 class WeightedNetwork(Network):
@@ -150,25 +158,25 @@ def visualize_graph(
     plt.figure(figsize=(10, 8))
     pos = nx.spring_layout(graph)  # Positioning for all nodes
 
-    # Calculate BFS tree edges based on each node's "parent" state
-    bfs_tree_edges = []
-    if show_bfs_tree:
-        for node_id, node in nodes.items():
-            parent = node.state.get("parent", None)
-            if (
-                parent is not None and parent != -1
-            ):  # Only add valid parent-child relationships
-                bfs_tree_edges.append((parent, node_id))
+    # # Calculate BFS tree edges based on each node's "parent" state
+    # bfs_tree_edges = []
+    # if show_bfs_tree:
+    #     for node_id, node in nodes.items():
+    #         parent = node.state.get("parent", None)
+    #         if (
+    #             parent is not None and parent != -1
+    #         ):  # Only add valid parent-child relationships
+    #             bfs_tree_edges.append((parent, node_id))
 
-    # Set edge colors based on whether they're part of the BFS tree
-    edge_colors = []
-    for edge in graph.edges():
-        if show_bfs_tree and (
-            edge in bfs_tree_edges or (edge[1], edge[0]) in bfs_tree_edges
-        ):
-            edge_colors.append("orange")  # Highlight BFS tree edges
-        else:
-            edge_colors.append("gray")
+    # # Set edge colors based on whether they're part of the BFS tree
+    # edge_colors = []
+    # for edge in graph.edges():
+    #     if show_bfs_tree and (
+    #         edge in bfs_tree_edges or (edge[1], edge[0]) in bfs_tree_edges
+    #     ):
+    #         edge_colors.append("orange")  # Highlight BFS tree edges
+    #     else:
+    #         edge_colors.append("gray")
 
     # Draw nodes with labels
     node_colors = "lightblue"
@@ -177,7 +185,7 @@ def visualize_graph(
         pos,
         with_labels=True,
         node_color=node_colors,
-        edge_color=edge_colors,
+        # edge_color=edge_colors,
         node_size=500,
         font_size=12,
         width=2,
@@ -194,21 +202,21 @@ def visualize_graph(
         graph, pos, edge_labels=edge_labels, font_color="black"
     )
 
-    # Display each node's specified state values
-    for node_id, (x, y) in pos.items():
-        node = nodes[node_id]
+    # # Display each node's specified state values
+    # for node_id, (x, y) in pos.items():
+    #     node = nodes[node_id]
 
-        # Display specified states (e.g., "parent", "children", "value") for each node
-        if node_states_to_display:
-            for i, state_key in enumerate(node_states_to_display):
-                state_value = node.state.get(state_key, None)
-                plt.text(
-                    x,
-                    y - 0.05 - (i * 0.1),
-                    f"{state_key.capitalize()}: {state_value}",
-                    ha="center",
-                    fontsize=8,
-                )
+    #     # Display specified states (e.g., "parent", "children", "value") for each node
+    #     if node_states_to_display:
+    #         for i, state_key in enumerate(node_states_to_display):
+    #             state_value = node.state.get(state_key, None)
+    #             plt.text(
+    #                 x,
+    #                 y - 0.05 - (i * 0.1),
+    #                 f"{state_key.capitalize()}: {state_value}",
+    #                 ha="center",
+    #                 fontsize=8,
+    #             )
 
     plt.title(title)
     plt.show()
