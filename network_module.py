@@ -2,6 +2,7 @@ from typing import Union, Any, List, Dict
 from abc import ABC, abstractmethod
 import networkx as nx
 import matplotlib.pyplot as plt
+from enum import Enum
 
 
 NeighbourType = Union[List[int], Dict[int, float]]
@@ -44,7 +45,7 @@ class AbstractNode(ABC):
 class Network:
     """Represents a network"""
 
-    def __init__(self, graph: nx.Graph, node_type):
+    def __init__(self, graph: nx.Graph, node_type: AbstractNode):
         """
         Initialize a Network instance.
 
@@ -119,7 +120,6 @@ class Network:
         return "".join(output)
 
 
-
 class WeightedNetwork(Network):
     """
     A class representing a weighted network that extends the base Network class.
@@ -143,40 +143,39 @@ def visualize_graph(
     nodes,
     title="Graph Visualization",
     node_states_to_display=None,
-    show_bfs_tree=True,
+    show_mst_edges=True,
 ):
     """
-    Visualize a graph with optional BFS tree edges and customizable node states.
+    Visualize a graph with optional MST edges and customizable node states.
 
     Args:
         graph (nx.Graph): The graph to visualize.
         nodes (dict): A dictionary of nodes and their states.
         title (str): The title of the plot.
         node_states_to_display (list of str): List of node state keys to display (e.g., ["parent", "value"]).
-        show_bfs_tree (bool): Whether to highlight BFS tree edges.
+        show_mst_edges (bool): Whether to highlight MST edges.
     """
     plt.figure(figsize=(10, 8))
     pos = nx.spring_layout(graph)  # Positioning for all nodes
 
-    # # Calculate BFS tree edges based on each node's "parent" state
-    # bfs_tree_edges = []
-    # if show_bfs_tree:
-    #     for node_id, node in nodes.items():
-    #         parent = node.state.get("parent", None)
-    #         if (
-    #             parent is not None and parent != -1
-    #         ):  # Only add valid parent-child relationships
-    #             bfs_tree_edges.append((parent, node_id))
+    # Extract MST edges (branch edges) based on node states
+    mst_edges = set()
+    if show_mst_edges:
+        for node_id, node_data in nodes.items():
+            adjacent_edges = getattr(node_data, "adjacent_edges", {})
+            for neighbor_id, edge_data in adjacent_edges.items():
+                if str(edge_data["status"]) == "EdgeState.BRANCH":
+                    mst_edges.add(
+                        (min(node_id, neighbor_id), max(node_id, neighbor_id))
+                    )
 
-    # # Set edge colors based on whether they're part of the BFS tree
-    # edge_colors = []
-    # for edge in graph.edges():
-    #     if show_bfs_tree and (
-    #         edge in bfs_tree_edges or (edge[1], edge[0]) in bfs_tree_edges
-    #     ):
-    #         edge_colors.append("orange")  # Highlight BFS tree edges
-    #     else:
-    #         edge_colors.append("gray")
+    # Set edge colors based on whether they're part of the MST
+    edge_colors = []
+    for edge in graph.edges():
+        if (min(edge), max(edge)) in mst_edges:
+            edge_colors.append("orange")  # Highlight MST edges
+        else:
+            edge_colors.append("gray")
 
     # Draw nodes with labels
     node_colors = "lightblue"
@@ -185,7 +184,7 @@ def visualize_graph(
         pos,
         with_labels=True,
         node_color=node_colors,
-        # edge_color=edge_colors,
+        edge_color=edge_colors,
         node_size=500,
         font_size=12,
         width=2,
@@ -202,21 +201,21 @@ def visualize_graph(
         graph, pos, edge_labels=edge_labels, font_color="black"
     )
 
-    # # Display each node's specified state values
-    # for node_id, (x, y) in pos.items():
-    #     node = nodes[node_id]
+    # Optionally display each node's specified state values
+    if node_states_to_display:
+        for node_id, (x, y) in pos.items():
+            node_data = nodes[node_id]
 
-    #     # Display specified states (e.g., "parent", "children", "value") for each node
-    #     if node_states_to_display:
-    #         for i, state_key in enumerate(node_states_to_display):
-    #             state_value = node.state.get(state_key, None)
-    #             plt.text(
-    #                 x,
-    #                 y - 0.05 - (i * 0.1),
-    #                 f"{state_key.capitalize()}: {state_value}",
-    #                 ha="center",
-    #                 fontsize=8,
-    #             )
+            # Display specified states (e.g., "parent", "value") for each node
+            for i, state_key in enumerate(node_states_to_display):
+                state_value = getattr(node_data, state_key, None)
+                plt.text(
+                    x,
+                    y - 0.05 - (i * 0.1),
+                    f"{state_key.capitalize()}: {state_value}",
+                    ha="center",
+                    fontsize=8,
+                )
 
     plt.title(title)
     plt.show()
