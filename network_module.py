@@ -94,7 +94,7 @@ class Network:
         """
         for i in range(rounds):
             self._simulate_round(round_number=i)
-            print("-" * 200)
+            # print("-" * 200)
 
     def max_rounds(self) -> int:
         """
