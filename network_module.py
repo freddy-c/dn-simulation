@@ -94,6 +94,7 @@ class Network:
         """
         for i in range(rounds):
             self._simulate_round(round_number=i)
+            print("-" * 200)
 
     def max_rounds(self) -> int:
         """
@@ -144,6 +145,7 @@ def visualize_graph(
     title="Graph Visualization",
     node_states_to_display=None,
     show_mst_edges=True,
+    seed=42,  # Seed for reproducibility
 ):
     """
     Visualize a graph with optional MST edges and customizable node states.
@@ -154,9 +156,10 @@ def visualize_graph(
         title (str): The title of the plot.
         node_states_to_display (list of str): List of node state keys to display (e.g., ["parent", "value"]).
         show_mst_edges (bool): Whether to highlight MST edges.
+        seed (int): Seed for consistent graph layout.
     """
     plt.figure(figsize=(10, 8))
-    pos = nx.spring_layout(graph)  # Positioning for all nodes
+    pos = nx.spring_layout(graph, seed=seed)  # Positioning for all nodes with seed
 
     # Extract MST edges (branch edges) based on node states
     mst_edges = set()
