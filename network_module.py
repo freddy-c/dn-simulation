@@ -158,7 +158,7 @@ def visualize_graph(
         show_mst_edges (bool): Whether to highlight MST edges.
         seed (int): Seed for consistent graph layout.
     """
-    plt.figure(figsize=(10, 8))
+    plt.figure(figsize=(20, 16))
     pos = nx.spring_layout(graph, seed=seed)  # Positioning for all nodes with seed
 
     # Extract MST edges (branch edges) based on node states
